@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: complete-production-e2e-app
-        image: sudhakar20000/complete-e2e-pipeline:1.0.0-30
+        image: sudhakar20000/complete-e2e-pipeline:1.0.0-35
         ports:
         - containerPort: 8888
         resources:
