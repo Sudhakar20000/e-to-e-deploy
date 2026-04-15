@@ -7,6 +7,10 @@ pipeline {
         APP_NAME = 'complete-production-e2e-pipeline'
     }
 
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker Image Tag from CI')
+    }
+
     stages {
 
         stage('Cleanup Workspace') {
@@ -23,32 +27,38 @@ pipeline {
             }
         }
 
-        stage('Update the Deployment Tags') {
+        stage('Update Deployment Manifest') {
             steps {
                 sh '''
+                    echo "Before update:"
                     cat deployment.yaml
-                    sed -i "s/${APP_NAME}.*/${APP_NAME}:${IMAGE_TAG}/g" deployment.yaml
+
+                    sed -i "s#sudhakar20000/complete-e2e-pipeline:.*#sudhakar20000/complete-e2e-pipeline:${IMAGE_TAG}#g" deployment.yaml
+
+                    echo "After update:"
                     cat deployment.yaml
                 '''
             }
         }
 
-        stage('Push the changed deployment file to Git') {
+        stage('Push Changes to Git') {
             steps {
-                sh '''
-                    git config --global user.name "Sudhakar20000"
-                    git config --global user.email "Sudhakar@man.cloud"
-                    git add deployment.yaml
-                    git commit -m "Updated Deployment Manifest"
-                '''
-
                 withCredentials([
                     gitUsernamePassword(
                         credentialsId: 'github',
                         gitToolName: 'Default'
                     )
                 ]) {
-                    sh 'git push https://github.com/Sudhakar20000/e-to-e-deploy main'
+                    sh '''
+                        git config --global user.name "Sudhakar20000"
+                        git config --global user.email "Sudhakar@man.cloud"
+
+                        git add deployment.yaml
+
+                        git commit -m "Updated Deployment Manifest with ${IMAGE_TAG}" || echo "No changes to commit"
+
+                        git push origin main
+                    '''
                 }
             }
         }
