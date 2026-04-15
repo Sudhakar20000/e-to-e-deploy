@@ -27,11 +27,25 @@ pipeline {
             }
         }
 
+        stage('Verify Files') {
+            steps {
+                sh '''
+                    echo "Current directory:"
+                    pwd
+
+                    echo "Files:"
+                    ls -la
+
+                    echo "Deployment file content:"
+                    cat deployment.yaml
+                '''
+            }
+        }
+
         stage('Update Deployment Manifest') {
             steps {
                 sh '''
-                    echo "Before update:"
-                    cat deployment.yaml
+                    echo "Updating image tag to: ${IMAGE_TAG}"
 
                     sed -i "s#sudhakar20000/complete-e2e-pipeline:.*#sudhakar20000/complete-e2e-pipeline:${IMAGE_TAG}#g" deployment.yaml
 
@@ -43,12 +57,11 @@ pipeline {
 
         stage('Push Changes to Git') {
             steps {
-                withCredentials([
-                    gitUsernamePassword(
-                        credentialsId: 'github',
-                        gitToolName: 'Default'
-                    )
-                ]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_TOKEN'
+                )]) {
                     sh '''
                         git config --global user.name "Sudhakar20000"
                         git config --global user.email "Sudhakar@man.cloud"
@@ -57,7 +70,7 @@ pipeline {
 
                         git commit -m "Updated Deployment Manifest with ${IMAGE_TAG}" || echo "No changes to commit"
 
-                        git push origin main
+                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/Sudhakar20000/e-to-e-deploy.git HEAD:main
                     '''
                 }
             }
